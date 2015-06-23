@@ -4,8 +4,15 @@ class ApplicationController < ActionController::Base
   protect_from_forgery with: :exception
 
   around_filter :scope_current_tenant
+  before_filter :switch_label
 
   private
+
+    def switch_label
+      unless Whitelabel.label_for(request.subdomains.first)
+        redirect_to(labels_url(subdomain: false), alert: "Please select a Label!")
+      end
+    end
 
     def current_tenant
       Tenant.find_by_subdomain request.subdomain
