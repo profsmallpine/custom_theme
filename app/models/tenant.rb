@@ -1,4 +1,5 @@
 class Tenant < ActiveRecord::Base
+  include RailsSettings::Extend
   cattr_accessor :current_id
 
   def self.current_id=(id)
