@@ -5,6 +5,14 @@ class ThemesController < ApplicationController
   # GET /themes.json
   def index
     @themes = Theme.all
+
+    respond_to do |format|
+      format.jpg {
+        @theme = current_tenant.theme
+        render_preview_snapshot
+      }
+      format.html
+    end
   end
 
   # GET /themes/1
@@ -41,15 +49,20 @@ class ThemesController < ApplicationController
   # PATCH/PUT /themes/1
   # PATCH/PUT /themes/1.json
   def update
-    respond_to do |format|
-      if @theme.update(theme_params)
-        %x(bundle exec rake tmp:cache:clear)
-        format.html { redirect_to @theme, notice: 'Theme was successfully updated.' }
-        format.json { render :show, status: :ok, location: @theme }
-      else
-        format.html { render :edit }
-        format.json { render json: @theme.errors, status: :unprocessable_entity }
+    @theme = Theme.find(params[:id])
+    if params[:commit] == "Preview"
+      @theme.assign_attributes(theme_params)
+      @themes = Theme.all
+      @subdomain = current_tenant.subdomain
+      save_preview_snapshot
+      respond_to do |format| 
+        format.js { render :file => "/app/views/themes/preview.js.erb" }
       end
+    elsif @theme.update(theme_params)
+      %x(bundle exec rake tmp:cache:clear)
+      flash[:notice] = 'Theme was successfully updated.'
+    else
+      render :file => "/app/views/themes/update_fail.js.erb"
     end
   end
 
@@ -72,5 +85,22 @@ class ThemesController < ApplicationController
     # Never trust parameters from the scary internet, only allow the white list through.
     def theme_params
       params.require(:theme).permit(:tenant_id, :font_color)
+    end
+
+    def save_preview_snapshot
+      create_preview_snapshot
+      @kit.to_file("#{Rails.root}/app/assets/images/preview/#{current_tenant.subdomain}_preview.jpg")
+    end
+
+    def render_preview_snapshot
+      create_preview_snapshot
+      send_data(@kit.to_jpg, :type => "image/jpg", :disposition => 'inline')
+    end
+
+    def create_preview_snapshot
+      Theme.compile_css_for_preview(current_tenant.subdomain, @theme)
+      html = render_to_string(:action => "index.html.erb", :layout => '/layouts/application.html.erb')
+      @kit = IMGKit.new(html, :quality => 50)
+      @kit.stylesheets << "#{Rails.root}/app/assets/stylesheets/preview/#{current_tenant.subdomain}_preview.css"
     end
 end
