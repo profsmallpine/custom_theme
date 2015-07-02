@@ -51,9 +51,7 @@ class ThemesController < ApplicationController
   def update
     @theme = Theme.find(params[:id])
     if params[:commit] == "Preview"
-      @theme.assign_attributes(theme_params)
-      @themes = Theme.all
-      @subdomain = current_tenant.subdomain
+      set_instance_variables_for_snapshot
       save_preview_snapshot
       respond_to do |format| 
         format.js { render :file => "/app/views/themes/preview.js.erb" }
@@ -102,5 +100,11 @@ class ThemesController < ApplicationController
       html = render_to_string(:action => "index.html.erb", :layout => '/layouts/application.html.erb')
       @kit = IMGKit.new(html, :quality => 50)
       @kit.stylesheets << "#{Rails.root}/app/assets/stylesheets/preview/#{current_tenant.subdomain}_preview.css"
+    end
+
+    def set_instance_variables_for_snapshot
+      @theme.assign_attributes(theme_params)
+      @themes = Theme.all
+      @subdomain = current_tenant.subdomain
     end
 end
