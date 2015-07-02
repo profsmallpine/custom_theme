@@ -7,3 +7,6 @@ There is also the added problem of separating sass files from one store to anoth
 Rails.application.config.assets.precompile += %w( spruce_application.css )
 Rails.application.config.assets.precompile += %w( professor_application.css )
 ```
+
+## Preview theme before saving
+In order to allow the user to preview their changes, [IMGKit](https://github.com/csquared/IMGKit) was used to take a snapshot of the html page. In order to give the page its custom css, the master sass file was given an erb extension and passed an instance variable. Then it was compiled to sass, and then sass into css. This compiled css file was saved and then passed in to the html snapshot. Once the file was saved, it could then be previewed by the user before saving their changes.
